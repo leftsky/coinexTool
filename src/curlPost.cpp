@@ -1,6 +1,7 @@
 
 #include "curl/curl.h"
 #include <iostream>
+#include <map>
 #include "curlPost.h"
 #include "easylogging/easylogging++.h"
 #include "LeftMyCodes/MyCodes.h"
@@ -8,7 +9,7 @@
 #include "nlohmann/json.hpp"
 
 
-#define SECRET_KEY "BD176C892AEC4434B48951E716FA7B041CB9AA54BDF22F87"
+//#define SECRET_KEY "BD176C892AEC4434B48951E716FA7B041CB9AA54BDF22F87"
 
 
 namespace coinexTool {
@@ -28,6 +29,18 @@ namespace coinexTool {
             LOG(WARNING) << params;
             return string("");
         }
+        string paramsFront;
+        {
+            map<string, string> a;
+            for (json::iterator it = pm.begin(); it != pm.end(); ++it) {
+                a.insert(pair<string, string>(it.key(), it.value().dump()));
+            }
+            for (auto it = a.begin(); it != a.end(); ++it) {
+                LOG(INFO) << it->first << " : " << it->second;
+                paramsFront += it->first + "=" + it->second + "&";
+            }
+        }
+        STRING_CUTCHAR(paramsFront, '\"');
         json access_id, tonce;
         try {
             access_id = pm["access_id"];
@@ -42,8 +55,10 @@ namespace coinexTool {
         char sourceStr[1024];
         string str = access_id.dump();
         str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
-        snprintf(sourceStr, 1024, "access_id=%s&tonce=%s&secret_key=%s",
-            str.c_str(), tonce.dump().c_str(), secret_key);
+        //snprintf(sourceStr, 1024, "access_id=%s&tonce=%s&secret_key=%s",
+        //    str.c_str(), tonce.dump().c_str(), secret_key);
+        snprintf(sourceStr, 1024, "%ssecret_key=%s",
+            paramsFront.c_str(), secret_key);
         LOG(INFO) << "sourceStr: " << sourceStr;
 
         unsigned char decrypt[16];
@@ -55,6 +70,7 @@ namespace coinexTool {
         char hexStr[40];
         leftName::HexToStr((const char*)decrypt, 16, hexStr, 40);
         snprintf(auth, 200, "authorization: %s", hexStr);
+        LOG(INFO) << "final: " << auth;
         return string(auth);
     }
 
@@ -103,14 +119,15 @@ namespace coinexTool {
     }
 
     // http POST  
-    CURLcode curl_post_req(const string &url, const string &postParams, string &response)
+    CURLcode curl_post_req(const string &url, const string &postParams, string &response, curl_slist *headers)
     {
+        LOG(INFO) << "final post: " << postParams.c_str();
         // init curl  
         CURL *curl = curl_easy_init();
         // res code  
         CURLcode res;
         // set handles
-        struct curl_slist *headers = NULL;
+        //struct curl_slist *headers = NULL;
         if (curl)
         {
             // set params  
@@ -128,16 +145,12 @@ namespace coinexTool {
             curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
             curl_easy_setopt(curl, CURLOPT_TIMEOUT, 3);
             // set handles
-            headers = curl_slist_append(headers, "Content-Type: application/json");
-            headers = curl_slist_append(headers, "authorization: 1D9F527CD1B111AA6BAA87D55064216C");
-            headers = curl_slist_append(headers,
-                "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36");
             curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
             // start req  
             res = curl_easy_perform(curl);
         }
         // release curl  
-        curl_slist_free_all(headers);
+        //curl_slist_free_all(headers);
         curl_easy_cleanup(curl);
         return res;
     }
@@ -158,7 +171,7 @@ namespace coinexTool {
 #endif
     }
 
-    char *EasyCurl::post(const char *url, const char *param, char *buf, int len) {
+    char *EasyCurl::post(const char *url, const char *param, char *buf, int len, const char *key) {
 #ifdef LEFT_OS_WIN
         LOG(WARNING) << "POST: 暂不支持当前系统";
         return NULL;
@@ -168,22 +181,16 @@ namespace coinexTool {
         struct curl_slist *headers = NULL;
         { // 设置HTTP头信息
             headers = curl_slist_append(headers, "Content-Type: application/json; charset=utf-8");
-            string str = string(url) + "&secret_key=" + string(SECRET_KEY);
-            LOG(INFO) << "MD5 source str: " << str;
-            unsigned char decrypt[16];
-            MD5_CTX md5;
-            MD5Init(&md5);
-            MD5Update(&md5, (unsigned char*)str.c_str(), (int)strlen(str.c_str()));//只是个中间步骤
-            MD5Final(&md5, decrypt);//32位
-            char auth[200];
-            char hexStr[40];
-            leftName::HexToStr((const char*)decrypt, 16, hexStr, 40);
-            snprintf(auth, 200, "authorization: %s", hexStr);
-            headers = curl_slist_append(headers, auth);
+            string sign = get_sign(param, key).c_str();
+            if (sign.length() <= 0) {
+                snprintf(buf, len, "function get_sign failed");
+                return buf;
+            }
+            headers = curl_slist_append(headers, sign.c_str());
             headers = curl_slist_append(headers,
                 "User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36");
         }
-        auto res = curl_post_req(url, param, postResponseStr);
+        auto res = curl_post_req(url, param, postResponseStr, headers);
         // 释放header
         curl_slist_free_all(headers);
 
@@ -214,6 +221,15 @@ namespace coinexTool {
             LOG(WARNING) << params;
             return string("");
         }
+        string paramsFront;
+        {
+            for (json::iterator it = pm.begin(); it != pm.end(); ++it) {
+                if (it != pm.begin())
+                    paramsFront += "&";
+                paramsFront += it.key() + "=" + it.value().dump();
+            }
+        }
+        STRING_CUTCHAR(paramsFront, '\"');
         json access_id, tonce;
         try {
             access_id = pm["access_id"];
@@ -227,12 +243,14 @@ namespace coinexTool {
         char urlUri[1024];
         string str = access_id.dump();
         str.erase(std::remove(str.begin(), str.end(), '\"'), str.end());
-        snprintf(urlUri, 1024, "%s?access_id=%s&tonce=%s", 
-            url, str.c_str(), tonce.dump().c_str());
+        //snprintf(urlUri, 1024, "%s?access_id=%s&tonce=%s", 
+        //    url, str.c_str(), tonce.dump().c_str());
+        snprintf(urlUri, 1024, "%s?%s", 
+            url, paramsFront.c_str());
         return string(urlUri);
     }
 
-    char *EasyCurl::get(const char *url, const char *param, char *buf, int len) {
+    char *EasyCurl::get(const char *url, const char *param, char *buf, int len, const char *key) {
 #ifdef LEFT_OS_WIN
         LOG(WARNING) << "GET: 暂不支持当前系统";
         return NULL;
@@ -242,7 +260,7 @@ namespace coinexTool {
         struct curl_slist *headers = NULL;
         { // 设置HTTP头信息
             headers = curl_slist_append(headers, "Content-Type: application/json; charset=utf-8");
-            string sign = get_sign(param, SECRET_KEY).c_str();
+            string sign = get_sign(param, key).c_str();
             if (sign.length() <= 0) {
                 snprintf(buf, len, "function get_sign failed");
                 return buf;

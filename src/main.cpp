@@ -28,6 +28,7 @@ template<typename T> string toString(const T& t) {
 }
 
 #define access_id "7B3E854643CF4ACBAD9F91270A2E2721"
+#define SECRET_KEY "BD176C892AEC4434B48951E716FA7B041CB9AA54BDF22F87"
 #define market_list "https://api.coinex.com/v1/market/list"
 #define order_mining_difficulty "https://api.coinex.com/v1/order/mining/difficulty"
 #define balance_info "https://api.coinex.com/v1/balance/info"
@@ -51,9 +52,27 @@ LeftThrReturn thr2(LeftThrArgv null) {
 }
 
 int main(int argc, char **argv) {
-    if(0) { // 测试MD5算法
+    if (0) { // 测试 json map 排序
+        json j = {
+            {"ebacdb", 1},
+            {"eabcd", 2},
+            {"abcd", 3},
+            {"dcbd", 4}
+        };
+        using namespace std;
+        map<string, string> a;
+        for (json::iterator it = j.begin(); it != j.end(); ++it) {
+            a.insert(pair<string, string>(it.key(), it.value().dump()));
+        }
+        
+        for (auto it = a.begin(); it != a.end(); ++it) {
+            LOG(INFO) << it->first << " : " << it->second;
+        }
+        system("pause");
+    }
+    if (0) { // 测试MD5算法
         int i;
-        char encrypt[] = "BD176C892AEC4434B48951E716FA7B041CB9AA54BDF22F87";//"admin";//21232f297a57a5a743894a0e4a801fc3
+        char encrypt[] = "access_id=7B3E854643CF4ACBAD9F91270A2E2721&amount=1&market=1&price=1&source_id=1991&tonce=1533472281345&type=sell&secret_key=BD176C892AEC4434B48951E716FA7B041CB9AA54BDF22F87";//"admin";//21232f297a57a5a743894a0e4a801fc3
         unsigned char decrypt[16];
 
         MD5_CTX md5;
@@ -68,13 +87,13 @@ int main(int argc, char **argv) {
         }
         for (;;) LeftSleep(500);
     }
-    
+
     globalArgc = argc;
     globalArgv = argv;
     using namespace coinexTool;
     EasyCurl::init();
 
-   
+
 #ifdef CC_OS_LINUX
     LeftThrNo no = 0;
     CURRENCY_StartThread(thr1, NULL, no);
@@ -94,9 +113,9 @@ int main(int argc, char **argv) {
     //};
     //a.pm = postPm.dump();
     //for (;;) {
-    if(1) {
+    if (1) {
         json postPm = {
-            { "access_id", access_id },
+            { "access_id", access_id},
             { "tonce", time(NULL) * 1000 },
         };
         a.pm = postPm.dump();
@@ -108,6 +127,7 @@ int main(int argc, char **argv) {
                 { "access_id", access_id },
                 { "tonce", time(NULL) * 1000 },
             }},
+            {"secret_key", SECRET_KEY},
             {"post_get", false}
         };
         LOG(INFO) << "please talk msg";
@@ -136,7 +156,7 @@ int main(int argc, char **argv) {
 
     string endUrl;
     endUrl = postUrlStr + "?tonce=" + toString((time(NULL) * 1000));
-    
+
     a.get(endUrl.c_str(), buf, 10240);
     LOG(INFO) << buf;
 #endif
@@ -146,4 +166,4 @@ int main(int argc, char **argv) {
 #endif
 
     EasyCurl::clean();
-}
+    }

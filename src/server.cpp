@@ -49,6 +49,19 @@ namespace {
             LOG(WARNING) << msg;
             return NULL;
         }
+        json secret_key_j;
+        bool sk = true;
+        try {
+            secret_key_j = j["secret_key"];
+        }
+        catch (const std::exception&)
+        {
+            LOG(INFO) << "secret_key is not exist";
+            sk = false;
+        }
+        string secret_key = sk ? secret_key_j.dump() : "";
+        STRING_CUTCHAR(secret_key, '\"');
+        LOG(INFO) << "secret_key: " << secret_key;
         if (url.empty() || url.length() < 5) {
             LOG(WARNING) << "url is not accept";
             LOG(WARNING) << url;
@@ -60,10 +73,10 @@ namespace {
 
         EasyCurl a;
         if (post_get) {
-            a.post(url.c_str(), pm.dump().c_str(), rtMsg, len);
+            a.post(url.c_str(), pm.dump().c_str(), rtMsg, len, secret_key.c_str());
         }
         else {
-            a.get(url.c_str(), pm.dump().c_str(), rtMsg, len);
+            a.get(url.c_str(), pm.dump().c_str(), rtMsg, len, secret_key.c_str());
         }
         return rtMsg;
     }
