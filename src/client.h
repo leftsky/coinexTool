@@ -3,9 +3,11 @@
 #define _LEFT_7112_UC_TCP_BASE_UPDATER_H_
 
 #include "server.h"
+#include "nlohmann/json.hpp"
 
 namespace toolClient {
-    int PleaseTalkMsg(toolServer::ctS ask);
+    using json = nlohmann::json;
+    int PleaseTalkMsg(json j);
 }
 
 #endif

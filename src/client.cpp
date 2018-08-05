@@ -47,7 +47,7 @@ namespace toolClient {
         bufferevent_free(bev);
     }
 
-    int PleaseTalkMsg(ctS ask) {
+    int PleaseTalkMsg(json j) {
         LeftSocket::InitializeSocket();
         int rt;
         struct event_base *base = event_base_new();
@@ -62,12 +62,12 @@ namespace toolClient {
             sizeof(server_addr));
         bufferevent_setcb(bev, read_cb, NULL, event_cb, &rt);
         bufferevent_enable(bev, EV_READ | EV_PERSIST);
-        using json = nlohmann::json;
+ /*       using json = nlohmann::json;
         json j = {
             { "url", ask.url },
             { "pm", ask.pm },
             { "post_get", ask.post_get }
-        };
+        };*/
         char buf[10240];
         snprintf(buf, 10240, j.dump().c_str());
         bufferevent_write(bev, buf, strlen(buf));

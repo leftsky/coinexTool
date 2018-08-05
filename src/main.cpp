@@ -93,7 +93,8 @@ int main(int argc, char **argv) {
     //    { "message", "Ok" }
     //};
     //a.pm = postPm.dump();
-    for (;;) {
+    //for (;;) {
+    if(1) {
         json postPm = {
             { "access_id", access_id },
             { "tonce", time(NULL) * 1000 },
@@ -101,8 +102,16 @@ int main(int argc, char **argv) {
         a.pm = postPm.dump();
         //a.pm = "";
         a.post_get = false;
+        json j = {
+            {"url", balance_info},
+            {"pm", {
+                { "access_id", access_id },
+                { "tonce", time(NULL) * 1000 },
+            }},
+            {"post_get", false}
+        };
         LOG(INFO) << "please talk msg";
-        PleaseTalkMsg(a);
+        PleaseTalkMsg(j);
         LeftSleep(100);
     }
 #endif

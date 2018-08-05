@@ -36,7 +36,7 @@ namespace {
             return NULL;
         }
         string url;
-        string pm;
+        json pm;
         bool post_get = true;
         try {
             url = j["url"];
@@ -60,10 +60,10 @@ namespace {
 
         EasyCurl a;
         if (post_get) {
-            a.post(url.c_str(), pm.c_str(), rtMsg, len);
+            a.post(url.c_str(), pm.dump().c_str(), rtMsg, len);
         }
         else {
-            a.get(url.c_str(), pm.c_str(), rtMsg, len);
+            a.get(url.c_str(), pm.dump().c_str(), rtMsg, len);
         }
         return rtMsg;
     }
