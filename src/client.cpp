@@ -21,7 +21,7 @@ namespace toolClient {
         auto len = bufferevent_read(bev, msg, 10240);
         msg[len] = '\0';
         LOG(INFO) << "len: " << len << "\r\n" << msg;
-        //bufferevent_free(bev);
+        bufferevent_free(bev);
     }
 
     void event_cb(struct bufferevent *bev, short event, void *arg) {
@@ -65,8 +65,8 @@ namespace toolClient {
         using json = nlohmann::json;
         json j = {
             { "url", ask.url },
-        { "pm", ask.pm },
-        { "post_get", ask.post_get }
+            { "pm", ask.pm },
+            { "post_get", ask.post_get }
         };
         char buf[10240];
         snprintf(buf, 10240, j.dump().c_str());

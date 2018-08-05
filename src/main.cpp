@@ -93,15 +93,18 @@ int main(int argc, char **argv) {
     //    { "message", "Ok" }
     //};
     //a.pm = postPm.dump();
-    json postPm = {
-        { "access_id", access_id },
-        { "tonce", time(NULL) * 1000 },
-    };
-    a.pm = postPm.dump();
-    //a.pm = "";
-    a.post_get = false;
-    LOG(INFO) << "please talk msg";
-    PleaseTalkMsg(a);
+    for (;;) {
+        json postPm = {
+            { "access_id", access_id },
+            { "tonce", time(NULL) * 1000 },
+        };
+        a.pm = postPm.dump();
+        //a.pm = "";
+        a.post_get = false;
+        LOG(INFO) << "please talk msg";
+        PleaseTalkMsg(a);
+        LeftSleep(100);
+    }
 #endif
 
 #if 0
